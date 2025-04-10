@@ -1,4 +1,4 @@
-// game.js — Client with fixed local control, smooth interpolation, and respawn
+// game.js — Client with auto-respawn and animated elimination box
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -7,10 +7,11 @@ canvas.height = window.innerHeight;
 
 const socket = io();
 let playerId = null;
-let players = {};            // actual received data
-let smoothPlayers = {};      // interpolated/smoothed state
+let players = {};
+let smoothPlayers = {};
 let pickups = [];
 let eliminated = false;
+let lastPlayerName = '';
 
 const WORLD_SIZE = 1000;
 
@@ -19,12 +20,20 @@ const messageBox = document.createElement('div');
 messageBox.style.position = 'absolute';
 messageBox.style.top = '50%';
 messageBox.style.left = '50%';
-messageBox.style.transform = 'translate(-50%, -50%)';
+messageBox.style.transform = 'translate(-50%, -50%) scale(0.8)';
+messageBox.style.opacity = '0';
+messageBox.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
 messageBox.style.fontSize = '32px';
 messageBox.style.color = 'white';
 messageBox.style.zIndex = 20;
 messageBox.style.textAlign = 'center';
+messageBox.style.background = 'rgba(0, 0, 0, 0.7)';
+messageBox.style.padding = '20px';
+messageBox.style.borderRadius = '10px';
 messageBox.style.display = 'none';
+
+const messageText = document.createElement('div');
+messageText.innerHTML = 'You were eliminated!';
 
 const respawnButton = document.createElement('button');
 respawnButton.textContent = 'Respawn';
@@ -33,9 +42,8 @@ respawnButton.style.fontSize = '20px';
 respawnButton.style.padding = '10px 20px';
 respawnButton.style.cursor = 'pointer';
 respawnButton.onclick = () => {
-  const name = prompt('Enter your name to respawn:');
-  if (name) {
-    socket.emit('join', name);
+  if (lastPlayerName) {
+    socket.emit('join', lastPlayerName);
     eliminated = false;
     messageBox.style.display = 'none';
     players = {};
@@ -43,7 +51,7 @@ respawnButton.onclick = () => {
   }
 };
 
-messageBox.innerHTML = 'You were eliminated!<br>Refresh to play again.';
+messageBox.appendChild(messageText);
 messageBox.appendChild(respawnButton);
 document.body.appendChild(messageBox);
 
@@ -51,6 +59,7 @@ nameInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const name = nameInput.value.trim();
     if (name) {
+      lastPlayerName = name;
       socket.emit('join', name);
     }
   }
@@ -99,6 +108,10 @@ socket.on('playerLeft', (id) => {
 socket.on('eliminated', () => {
   eliminated = true;
   messageBox.style.display = 'block';
+  setTimeout(() => {
+    messageBox.style.opacity = '1';
+    messageBox.style.transform = 'translate(-50%, -50%) scale(1)';
+  }, 10);
 });
 
 function lerp(a, b, t) {

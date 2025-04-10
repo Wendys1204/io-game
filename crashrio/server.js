@@ -1,4 +1,4 @@
-// server.js — Crashr.io (Throttled update broadcasting)
+// server.js — Server-side with timed broadcasting for smooth updates
 
 const express = require('express');
 const http = require('http');
@@ -12,9 +12,6 @@ const WORLD_SIZE = 1000;
 
 let players = {};
 let pickups = [];
-
-let lastBroadcast = 0;
-const BROADCAST_INTERVAL = 1000 / 30; // 30 FPS
 
 const badWords = ['nigger', 'fuck', 'shit', 'bitch', 'cunt', 'asshole', 'retard'];
 
@@ -66,7 +63,6 @@ function checkPickupCollisions(player) {
   eaten.forEach(p => {
     setTimeout(() => {
       pickups.push(createPickup());
-      io.emit('updatePickups', pickups);
     }, 15000);
   });
 }
@@ -86,12 +82,10 @@ function checkPlayerCollisions() {
           a.size += Math.floor(b.size / 2);
           io.to(b.id).emit('eliminated');
           delete players[b.id];
-          return;
         } else if (b.size > a.size + 5) {
           b.size += Math.floor(a.size / 2);
           io.to(a.id).emit('eliminated');
           delete players[a.id];
-          return;
         }
       }
     }
@@ -150,13 +144,6 @@ io.on('connection', (socket) => {
 
     checkPickupCollisions(player);
     checkPlayerCollisions();
-
-    const now = Date.now();
-    if (now - lastBroadcast > BROADCAST_INTERVAL) {
-      io.emit('update', serializeAllPlayers());
-      io.emit('updatePickups', pickups);
-      lastBroadcast = now;
-    }
   });
 
   socket.on('disconnect', () => {
@@ -165,6 +152,12 @@ io.on('connection', (socket) => {
     io.emit('playerLeft', socket.id);
   });
 });
+
+// Timed broadcast loop (30 FPS)
+setInterval(() => {
+  io.emit('update', serializeAllPlayers());
+  io.emit('updatePickups', pickups);
+}, 1000 / 30);
 
 app.use(express.static('public'));
 
