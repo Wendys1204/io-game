@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Crashr.io</title>
+  <style>
+    html, body { margin: 0; overflow: hidden; background: #111; font-family: sans-serif; }
+    canvas { display: block; }
+    #nameInput {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      text-align: center;
+      background: #222;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+      z-index: 10;
+    }
+    #nameInput::placeholder {
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <input id="nameInput" placeholder="Enter your name" />
+  <canvas id="game" style="display:none"></canvas>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

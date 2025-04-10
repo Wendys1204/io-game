@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "express": "^5.1.0",
+    "node": "^23.11.0",
+    "server.js": "^1.0.0",
+    "socket.io": "^4.8.1"
+  },
+  "name": "crashrio",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
