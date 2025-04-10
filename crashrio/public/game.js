@@ -1,4 +1,4 @@
-// game.js — Client with interpolation + throttling
+// game.js — Client with fixed local control, smooth interpolation, and respawn
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -25,7 +25,26 @@ messageBox.style.color = 'white';
 messageBox.style.zIndex = 20;
 messageBox.style.textAlign = 'center';
 messageBox.style.display = 'none';
+
+const respawnButton = document.createElement('button');
+respawnButton.textContent = 'Respawn';
+respawnButton.style.marginTop = '20px';
+respawnButton.style.fontSize = '20px';
+respawnButton.style.padding = '10px 20px';
+respawnButton.style.cursor = 'pointer';
+respawnButton.onclick = () => {
+  const name = prompt('Enter your name to respawn:');
+  if (name) {
+    socket.emit('join', name);
+    eliminated = false;
+    messageBox.style.display = 'none';
+    players = {};
+    smoothPlayers = {};
+  }
+};
+
 messageBox.innerHTML = 'You were eliminated!<br>Refresh to play again.';
+messageBox.appendChild(respawnButton);
 document.body.appendChild(messageBox);
 
 nameInput.addEventListener('keydown', (e) => {
@@ -42,7 +61,9 @@ socket.on('init', (data) => {
   players = data.players;
   pickups = data.pickups;
   Object.keys(players).forEach(id => {
-    smoothPlayers[id] = { ...players[id] }; // initialize smoothed players
+    if (id !== playerId) {
+      smoothPlayers[id] = { ...players[id] };
+    }
   });
   nameInput.style.display = 'none';
   canvas.style.display = 'block';
@@ -51,8 +72,10 @@ socket.on('init', (data) => {
 socket.on('update', (data) => {
   players = data;
   Object.keys(players).forEach(id => {
-    if (!smoothPlayers[id]) {
-      smoothPlayers[id] = { ...players[id] };
+    if (id !== playerId) {
+      if (!smoothPlayers[id]) {
+        smoothPlayers[id] = { ...players[id] };
+      }
     }
   });
 });
@@ -63,7 +86,9 @@ socket.on('updatePickups', (data) => {
 
 socket.on('playerJoined', (player) => {
   players[player.id] = player;
-  smoothPlayers[player.id] = { ...player };
+  if (player.id !== playerId) {
+    smoothPlayers[player.id] = { ...player };
+  }
 });
 
 socket.on('playerLeft', (id) => {
@@ -81,9 +106,8 @@ function lerp(a, b, t) {
 }
 
 function drawPlayer(p) {
-  if (!p || !smoothPlayers[playerId]) return;
-
-  const me = smoothPlayers[playerId];
+  const me = players[playerId];
+  if (!me) return;
   const dx = p.x - me.x;
   const dy = p.y - me.y;
 
@@ -100,7 +124,7 @@ function drawPlayer(p) {
 }
 
 function drawPickup(p) {
-  const me = smoothPlayers[playerId];
+  const me = players[playerId];
   if (!me) return;
   const dx = p.x - me.x;
   const dy = p.y - me.y;
@@ -111,7 +135,7 @@ function drawPickup(p) {
 }
 
 function drawWorldBorder() {
-  const me = smoothPlayers[playerId];
+  const me = players[playerId];
   if (!me) return;
   const topLeftX = canvas.width / 2 - (me.x + WORLD_SIZE);
   const topLeftY = canvas.height / 2 - (me.y + WORLD_SIZE);
@@ -165,21 +189,21 @@ function update() {
     lastMoveEmit = now;
   }
 
-  // Interpolate other players
-  for (let id in players) {
-    if (!smoothPlayers[id]) continue;
-    smoothPlayers[id].x = lerp(smoothPlayers[id].x, players[id].x, 0.2);
-    smoothPlayers[id].y = lerp(smoothPlayers[id].y, players[id].y, 0.2);
-    smoothPlayers[id].angle = lerp(smoothPlayers[id].angle, players[id].angle, 0.2);
-    smoothPlayers[id].size = lerp(smoothPlayers[id].size, players[id].size, 0.2);
+  for (let id in smoothPlayers) {
+    if (!players[id]) continue;
+    smoothPlayers[id].x = lerp(smoothPlayers[id].x, players[id].x, 0.35);
+    smoothPlayers[id].y = lerp(smoothPlayers[id].y, players[id].y, 0.35);
+    smoothPlayers[id].angle = lerp(smoothPlayers[id].angle, players[id].angle, 0.35);
+    smoothPlayers[id].size = lerp(smoothPlayers[id].size, players[id].size, 0.35);
   }
 }
 
 function render() {
-  if (eliminated || !smoothPlayers[playerId]) return;
+  if (eliminated || !players[playerId]) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawWorldBorder();
   pickups.forEach(drawPickup);
+  drawPlayer(players[playerId]);
   Object.values(smoothPlayers).forEach(drawPlayer);
   drawMinimap();
 }
