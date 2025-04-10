@@ -1,4 +1,4 @@
-// server.js — Server-side with timed broadcasting and proper respawn support
+// server.js — Server with proper respawn logic and fixed absorb growth
 
 const express = require('express');
 const http = require('http');
@@ -79,11 +79,13 @@ function checkPlayerCollisions() {
 
       if (dist < (a.size + b.size) / 2) {
         if (a.size > b.size + 5) {
-          a.size += Math.floor(b.size / 2);
+          a.size += Math.floor(b.size / 4); // Smaller growth to reduce screen takeover
           io.to(b.id).emit('eliminated');
+          delete players[b.id];
         } else if (b.size > a.size + 5) {
-          b.size += Math.floor(a.size / 2);
+          b.size += Math.floor(a.size / 4);
           io.to(a.id).emit('eliminated');
+          delete players[a.id];
         }
       }
     }
@@ -151,7 +153,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Timed broadcast loop (30 FPS)
 setInterval(() => {
   io.emit('update', serializeAllPlayers());
   io.emit('updatePickups', pickups);
