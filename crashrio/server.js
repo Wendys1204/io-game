@@ -1,4 +1,4 @@
-// server.js — Crashr.io (Agar.io-style game with cars)
+// server.js — Crashr.io (Throttled update broadcasting)
 
 const express = require('express');
 const http = require('http');
@@ -12,6 +12,9 @@ const WORLD_SIZE = 1000;
 
 let players = {};
 let pickups = [];
+
+let lastBroadcast = 0;
+const BROADCAST_INTERVAL = 1000 / 30; // 30 FPS
 
 const badWords = ['nigger', 'fuck', 'shit', 'bitch', 'cunt', 'asshole', 'retard'];
 
@@ -79,17 +82,16 @@ function checkPlayerCollisions() {
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if (dist < (a.size + b.size) / 2) {
-        // Absorb mechanic: bigger player absorbs smaller
         if (a.size > b.size + 5) {
           a.size += Math.floor(b.size / 2);
           io.to(b.id).emit('eliminated');
           delete players[b.id];
-          io.emit('update', serializeAllPlayers());
+          return;
         } else if (b.size > a.size + 5) {
           b.size += Math.floor(a.size / 2);
           io.to(a.id).emit('eliminated');
           delete players[a.id];
-          io.emit('update', serializeAllPlayers());
+          return;
         }
       }
     }
@@ -149,8 +151,12 @@ io.on('connection', (socket) => {
     checkPickupCollisions(player);
     checkPlayerCollisions();
 
-    io.emit('update', serializeAllPlayers());
-    io.emit('updatePickups', pickups);
+    const now = Date.now();
+    if (now - lastBroadcast > BROADCAST_INTERVAL) {
+      io.emit('update', serializeAllPlayers());
+      io.emit('updatePickups', pickups);
+      lastBroadcast = now;
+    }
   });
 
   socket.on('disconnect', () => {
