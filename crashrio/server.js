@@ -1,4 +1,4 @@
-// server.js — Server-side with timed broadcasting for smooth updates
+// server.js — Server-side with timed broadcasting and proper respawn support
 
 const express = require('express');
 const http = require('http');
@@ -81,11 +81,9 @@ function checkPlayerCollisions() {
         if (a.size > b.size + 5) {
           a.size += Math.floor(b.size / 2);
           io.to(b.id).emit('eliminated');
-          delete players[b.id];
         } else if (b.size > a.size + 5) {
           b.size += Math.floor(a.size / 2);
           io.to(a.id).emit('eliminated');
-          delete players[a.id];
         }
       }
     }
