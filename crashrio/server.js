@@ -84,16 +84,32 @@ function checkPlayerCollisions() {
           a.size += Math.floor(b.size / 2);
           io.to(b.id).emit('eliminated');
           delete players[b.id];
-          io.emit('update', players);
+          io.emit('update', serializeAllPlayers());
         } else if (b.size > a.size + 5) {
           b.size += Math.floor(a.size / 2);
           io.to(a.id).emit('eliminated');
           delete players[a.id];
-          io.emit('update', players);
+          io.emit('update', serializeAllPlayers());
         }
       }
     }
   }
+}
+
+function serializeAllPlayers() {
+  const serialized = {};
+  for (const id in players) {
+    const p = players[id];
+    serialized[id] = {
+      x: p.x,
+      y: p.y,
+      size: p.size,
+      angle: p.angle,
+      name: p.name,
+      id: p.id
+    };
+  }
+  return serialized;
 }
 
 io.on('connection', (socket) => {
@@ -113,7 +129,7 @@ io.on('connection', (socket) => {
 
     socket.emit('init', {
       id: socket.id,
-      players,
+      players: serializeAllPlayers(),
       pickups
     });
 
@@ -133,7 +149,7 @@ io.on('connection', (socket) => {
     checkPickupCollisions(player);
     checkPlayerCollisions();
 
-    io.emit('update', players);
+    io.emit('update', serializeAllPlayers());
     io.emit('updatePickups', pickups);
   });
 
