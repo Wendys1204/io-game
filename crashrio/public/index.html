@@ -1,33 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>DemoDerby.Online</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>demoderby.online</title>
   <style>
-    html, body { margin: 0; overflow: hidden; background: #111; font-family: sans-serif; }
-    canvas { display: block; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;
+      font-family: 'Arial', sans-serif;
+    }
+    #game {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: none;
+    }
     #nameInput {
       position: absolute;
       top: 40%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translateX(-50%);
       font-size: 24px;
-      padding: 12px 20px;
-      border: none;
+      padding: 12px 24px;
       border-radius: 8px;
-      text-align: center;
-      background: #222;
-      color: #fff;
-      box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+      border: none;
       z-index: 10;
-    }
-    #nameInput::placeholder {
-      color: #ccc;
     }
   </style>
 </head>
 <body>
-  <input id="nameInput" placeholder="Enter your name" />
-  <canvas id="game" style="display:none"></canvas>
+  <canvas id="game"></canvas>
+  <input id="nameInput" type="text" placeholder="Enter your name" autofocus />
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="game.js"></script>
 </body>
